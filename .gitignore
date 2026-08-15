@@ -1,0 +1,25 @@
+# Local .terraform directories
+**/.terraform/
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Ignore sensitive variable files (keep example templates)
+*.tfvars
+!tf-example.tfvars
+!tf_config_example.tfvars
+!*.example.tfvars
+
+# Terraform CLI config
+.terraformrc
+terraform.rc
+
+# System, Dist & IDE directories
+.dist/
+.claude/
+.DS_Store
+Thumbs.db
+*.log
