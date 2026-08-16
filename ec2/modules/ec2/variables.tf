@@ -39,12 +39,17 @@ variable "subnet_ids" {
     instead of once per instance.
 
     An instance may also give a literal subnet_id and ignore this map entirely.
+
+    An entry may be left empty (""), so a placeholder for a subnet that does not
+    exist yet can stay in the config. Only entries an instance actually points at
+    are read, so an empty one costs nothing - but an instance whose subnet_key
+    resolves to "" fails at plan time.
   EOT
   default     = {}
 
   validation {
-    condition     = alltrue([for id in values(var.subnet_ids) : can(regex("^subnet-[0-9a-f]{8,17}$", id))])
-    error_message = "Every entry of subnet_ids must be an existing subnet id, e.g. subnet-0a1b2c3d4e5f67890."
+    condition     = alltrue([for id in values(var.subnet_ids) : id == "" || can(regex("^subnet-[0-9a-f]{8,17}$", id))])
+    error_message = "Every entry of subnet_ids must be empty or an existing subnet id, e.g. subnet-0a1b2c3d4e5f67890."
   }
 }
 

@@ -28,12 +28,24 @@ vpc_cidr = "172.35.0.0/19"
 
 # The existing subnets, each under a short name of your choosing. Instances
 # below point at these with subnet_key = "<name>", so an id appears once here
-# rather than once per instance. Unused entries cost nothing.
+# rather than once per instance.
+#
+# The six slots below are the usual three-AZ private/public layout, left empty
+# so you only fill in the ones you actually have. An empty entry is ignored -
+# only the entries an instance actually points at are looked up in AWS, so the
+# rest can stay here as a reminder of what the map is for. Add or rename keys
+# freely; the names are yours, nothing in the config depends on them.
+#
+# Fill in at least the keys the instances at the bottom of this file use
+# (private-a and private-c as shipped) - pointing an instance at an empty entry
+# stops the plan with a message naming that instance.
 subnet_ids = {
-  "private-a" = "subnet-1111111111"
-  "private-b" = "subnet-2222222222"
-  "private-c" = "subnet-3333333333"
-  "public-a"  = "subnet-4444444444"
+  "private-a" = ""
+  "private-b" = ""
+  "private-c" = ""
+  "public-a"  = ""
+  "public-b"  = ""
+  "public-c"  = ""
 }
 
 ########################################

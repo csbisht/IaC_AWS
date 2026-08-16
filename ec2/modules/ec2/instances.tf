@@ -63,7 +63,7 @@ resource "aws_instance" "instances" {
     # support from terraform 1.9 while versions.tf allows >= 1.6.
     precondition {
       condition     = each.value.subnet_id != ""
-      error_message = "Instance '${each.key}' has subnet_key = \"${each.value.subnet_key}\", which is not a key of subnet_ids. Add it there, or give the instance a literal subnet_id."
+      error_message = "Instance '${each.key}' has no subnet: subnet_key = \"${each.value.subnet_key}\" is either missing from subnet_ids or set to an empty value there. Fill that entry in, or give the instance a literal subnet_id."
     }
 
     precondition {

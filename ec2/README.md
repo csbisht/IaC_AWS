@@ -193,12 +193,23 @@ vpc_id = "vpc-0a1b2c3d4e5f67890"  # Item 2 from Step 0
 # Leave it as "" and Terraform will automatically look it up from AWS for you!
 vpc_cidr = ""
 
-# Item 3 from Step 0: Give each subnet a friendly nickname (key)
+# Item 3 from Step 0: Give each subnet a friendly nickname (key).
+# Fill in only the ones you have - leave the rest empty.
 subnet_ids = {
   "private-a" = "subnet-11111111111111111"
   "private-b" = "subnet-22222222222222222"
+  "private-c" = ""
+  "public-a"  = ""
+  "public-b"  = ""
+  "public-c"  = ""
 }
 ```
+
+An entry may be left empty (`""`), which is how the example file ships: a full
+three-AZ private/public layout you fill in as you go. Only the subnets your
+instances actually point at are looked up in AWS, so empty slots cost nothing.
+If an instance does use a `subnet_key` whose value is empty, the plan stops and
+names that instance. The keys are yours - add, rename or remove them freely.
 
 ---
 
