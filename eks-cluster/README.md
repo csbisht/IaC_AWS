@@ -76,7 +76,7 @@ you'll paste them into the settings file in Step 2.
 | 4 | **At least 2 subnets in different availability zones** for the cluster brain | `subnet-1111`, `subnet-2222` | Two is the minimum; the code refuses to run with fewer. |
 | 5 | **Private subnets** for the worker computers | `subnet-1111`, ... | Usually the same ones as #4. These need a NAT gateway or VPC endpoints so servers can reach the internet to download software. |
 | 6 | *(Optional)* **Public subnets** | `subnet-4444`, ... | Only needed if you want internet-facing load balancers. |
-| 7 | A **KMS key** for encrypting Kubernetes secrets | `arn:aws:kms:eu-central-1:123456789012:key/...` | An encryption key. Must be in the same region. |
+| 7 | *(Optional)* A **KMS key** for encrypting Kubernetes secrets | `arn:aws:kms:eu-central-1:123456789012:key/...` | An encryption key. Must be in the same region. Only needed if you leave `eks_secrets_encryption_enabled = true`, and your login needs `kms:CreateGrant` on it. |
 | 8 | A **KMS key** for encrypting the servers' hard drives | `arn:aws:kms:...` | Can be the same key as #7. |
 | 9 | *(Optional)* An **EC2 key pair** name | `my-keypair` | Only if you want to log into the worker computers directly. Leave it as `""` if not — **a name that doesn't exist will make the build fail.** |
 | 10 | *(Optional)* An **S3 bucket** | `my-tfstate-bucket` | Only if you want to share this setup with teammates. See Step 3. |
@@ -182,7 +182,6 @@ cluster_name    = "my-cluster"                  # becomes "my-cluster-eks"
 cluster_version = "1.33"                        # Kubernetes version
 iam_role_name   = "my-cluster"                  # a prefix for permission badges
 
-kms_key_arn_eks = "arn:aws:kms:...:key/..."     # item 7
 kms_key_id_ebs  = "arn:aws:kms:...:key/..."     # item 8
 
 ssh_key_name    = ""                            # item 9 — leave empty if unsure
@@ -194,6 +193,9 @@ ssh_key_name    = ""                            # item 9 — leave empty if unsu
 cluster_endpoint_public_access = false   # see the big warning below
 eks_cluster_logging_enabled    = true    # activity logging — costs a little, worth it
 
+eks_secrets_encryption_enabled = true    # extra encryption of Kubernetes secrets — see below
+kms_key_arn_eks = "arn:aws:kms:...:key/..."   # item 7, only when the line above is true
+
 deploy_eks_nodegroup        = true       # false = brain only, no worker computers
 node_group_name             = "my-cluster"
 node_group_version          = "1.33"     # must NOT be newer than cluster_version
@@ -204,6 +206,18 @@ instance_type               = ["m5.large"]   # size of each server
 ami_type                    = "AL2023_x86_64_STANDARD"   # operating system
 disk_size                   = 100        # hard drive size in GB, per server
 ```
+
+**About `eks_secrets_encryption_enabled`.** AWS *always* encrypts the cluster's stored data
+with a key it owns. This setting adds a second lock on top of Kubernetes secrets, using a key
+**you** own — the thing auditors usually ask for. Two catches:
+
+- Your AWS login needs `kms:CreateGrant` (and `kms:DescribeKey`) on that key, and the key's own
+  policy has to allow it. Without that the build fails on `kms:CreateGrant` — see
+  [When something goes wrong](#when-something-goes-wrong).
+- You can turn it **on** for an existing cluster, but you cannot turn it **off** again: going
+  from `true` back to `false` destroys and rebuilds the cluster. Decide before the first build.
+
+Set it to `false` for a sandbox or if you don't have a key, and leave `kms_key_arn_eks` empty.
 
 ### 🚨 The single most important setting
 
@@ -443,7 +457,8 @@ Changes that need care:
 Things you effectively cannot change afterwards:
 
 - `cluster_name`, `vpc_id`, the KMS keys. Changing these destroys and rebuilds the whole
-  cluster.
+  cluster. Same for turning `eks_secrets_encryption_enabled` from `true` back to `false` —
+  switching it on later is fine, switching it off is not.
 
 **Note on scaling:** if you turned on the Cluster Autoscaler, it manages the number of servers
 itself, and this code deliberately ignores your `node_group_desired_capacity` afterwards so the
@@ -512,6 +527,7 @@ left off. It won't build duplicates.
 | Hangs, then `context deadline exceeded` / `dial tcp ... i/o timeout` while installing add-ons | Terraform can't reach the cluster over the network. | The private-endpoint problem. Run from inside the VPC, or set `cluster_endpoint_public_access = true` for testing. |
 | `serviceaccounts "aws-node" already exists` | You set `enable_vpc_cni = true`. | Set it back to `false`. |
 | `ResourceInUseException` on the access entry | You pointed `eks_admin_role_arn` at the same identity that's running Terraform. | That identity is *already* an admin automatically. Set `enable_eks_admin_access = false`, or point it at a different role. |
+| `InvalidRequestException: User not authorized to perform kms:CreateGrant` | Secrets encryption is on, but your login can't create a grant on the KMS key in `kms_key_arn_eks`. | Get `kms:CreateGrant` + `kms:DescribeKey` on that key (in your IAM policy *and* the key policy), or set `eks_secrets_encryption_enabled = false`. |
 | `AccessDeniedException` | Your AWS login lacks permissions. | Ask your AWS administrator. |
 | Cluster builds, but `kubectl get nodes` stays empty | Workers can't reach the internet to download their software. | Check the private subnets have a NAT gateway or the required VPC endpoints. |
 | Add-ons fail on the very first run | Terraform sometimes needs the cluster to exist before it can configure the connection to it. | Just run `terraform apply -var-file=my-cluster.tfvars` again. |

@@ -18,6 +18,7 @@ module "eks" {
   cluster_name                   = var.cluster_name
   cluster_version                = var.cluster_version
   iam_role_name                  = var.iam_role_name
+  eks_secrets_encryption_enabled = var.eks_secrets_encryption_enabled
   kms_key_arn_eks                = var.kms_key_arn_eks
   kms_key_id_ebs                 = var.kms_key_id_ebs
   eks_cluster_logging_enabled    = var.eks_cluster_logging_enabled

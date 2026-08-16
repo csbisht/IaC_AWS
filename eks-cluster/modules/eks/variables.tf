@@ -219,9 +219,16 @@ variable "iam_role_name" {
   description = "Base name used to build the cluster and node group IAM role names."
 }
 
+variable "eks_secrets_encryption_enabled" {
+  type        = bool
+  description = "Enable envelope encryption of Kubernetes secrets with the customer managed key in kms_key_arn_eks. Requires kms:CreateGrant on that key for the principal running terraform."
+  default     = true
+}
+
 variable "kms_key_arn_eks" {
   type        = string
-  description = "KMS key ARN used for envelope encryption of Kubernetes secrets."
+  description = "KMS key ARN used for envelope encryption of Kubernetes secrets. Ignored, and safe to leave empty, when eks_secrets_encryption_enabled is false."
+  default     = ""
 }
 
 variable "kms_key_id_ebs" {

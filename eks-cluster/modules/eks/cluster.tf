@@ -20,11 +20,21 @@ resource "aws_eks_cluster" "eks-cluster" {
     endpoint_private_access = true
   }
 
-  encryption_config {
-    resources = ["secrets"]
+  # Envelope encryption of Kubernetes secrets with a customer managed KMS key.
+  # Optional: EKS always encrypts etcd with an AWS owned key, this adds a second
+  # layer under a key you control. Creating the cluster makes EKS ask KMS for a
+  # grant on that key on your behalf, so the principal running terraform needs
+  # kms:CreateGrant (plus kms:DescribeKey) on it - without that the CreateCluster
+  # call fails with "User not authorized to perform kms:CreateGrant operation".
+  dynamic "encryption_config" {
+    for_each = var.eks_secrets_encryption_enabled ? [1] : []
 
-    provider {
-      key_arn = var.kms_key_arn_eks
+    content {
+      resources = ["secrets"]
+
+      provider {
+        key_arn = var.kms_key_arn_eks
+      }
     }
   }
 
@@ -36,4 +46,11 @@ resource "aws_eks_cluster" "eks-cluster" {
     aws_iam_role_policy_attachment.AmazonEKSClusterPolicy,
     aws_iam_role_policy_attachment.AmazonEKSVPCResourceController,
   ]
+
+  lifecycle {
+    precondition {
+      condition     = !var.eks_secrets_encryption_enabled || var.kms_key_arn_eks != ""
+      error_message = "kms_key_arn_eks must be set when eks_secrets_encryption_enabled is true."
+    }
+  }
 }

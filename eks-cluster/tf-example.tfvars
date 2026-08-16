@@ -82,7 +82,32 @@ cluster_name = "tf-example"
 cluster_version = "1.33"
 iam_role_name   = "tf-example"
 
-kms_key_id_ebs  = "arn:aws:kms:eu-central-1:123456789012:key/00000000-0000-0000-0000-000000000000"
+# KMS key used to encrypt the worker node EBS root volumes. Always required,
+# the launch template references it for every node.
+kms_key_id_ebs = "arn:aws:kms:eu-central-1:123456789012:key/00000000-0000-0000-0000-000000000000"
+
+# Envelope encryption of Kubernetes secrets (control-plane / etcd secrets) with
+# a customer managed KMS key. EKS already encrypts etcd with an AWS owned key,
+# so this is a second layer under a key you control - useful for compliance
+# (PCI/HIPAA-style "CMK for secrets at rest" requirements), unnecessary for a
+# throwaway or sandbox cluster.
+#
+# true requires kms_key_arn_eks below AND these permissions for the principal
+# running terraform (and for the key policy to allow them):
+#   kms:CreateGrant, kms:DescribeKey  on that key
+# EKS creates a grant on the key at cluster creation time; missing CreateGrant
+# is what produces:
+#   InvalidRequestException: User not authorized to perform kms:CreateGrant
+# Fix it by granting the permission, or set this to false to skip the feature.
+#
+# Note: this can be turned on for an existing cluster, but it cannot be turned
+# off again - flipping true -> false on a live cluster replaces the cluster.
+# Decide before the first apply.
+eks_secrets_encryption_enabled = true
+
+# Required only when eks_secrets_encryption_enabled = true, otherwise ignored
+# and safe to leave empty. Must be a symmetric encryption key in the same
+# region as the cluster.
 kms_key_arn_eks = "arn:aws:kms:eu-central-1:123456789012:key/00000000-0000-0000-0000-000000000000"
 
 eks_cluster_logging_enabled    = true
