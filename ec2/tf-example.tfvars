@@ -24,7 +24,7 @@ vpc_id = "vpc-1234567890"
 
 # CIDR of that VPC, used by the "@vpc_cidr" placeholder in the rules below.
 # Leave it empty to have it read back from the VPC instead of typed twice.
-vpc_cidr = "172.35.0.0/19"
+vpc_cidr = "172.31.0.0/16"
 
 # The existing subnets, each under a short name of your choosing. Instances
 # below point at these with subnet_key = "<name>", so an id appears once here
@@ -265,15 +265,18 @@ instances = {
     os            = "linux"
     instance_type = "t3.micro"
 
+    # Extra data volumes, on top of the root disk every instance already has.
+    # Empty means the instance gets the root volume only. Uncomment the entry
+    # below to attach a separate 100 GiB data disk as well.
     ebs_volumes = [
-      {
-        device_name = "/dev/sdf"
-        size        = 100
-        type        = "gp3"
-        # gp3 defaults to 3000 IOPS / 125 MiB/s when these are left out.
-        # iops       = 4000
-        # throughput = 250
-      }
+      # {
+      #   device_name = "/dev/sdf"
+      #   size        = 100
+      #   type        = "gp3"
+      #   # gp3 defaults to 3000 IOPS / 125 MiB/s when these are left out.
+      #   # iops       = 4000
+      #   # throughput = 250
+      # }
     ]
 
     tags = {
@@ -290,13 +293,14 @@ instances = {
     os            = "windows"
     instance_type = "t3.medium"
 
-    # Windows data volumes use xvd* device names.
+    # Windows data volumes use xvd* device names. Empty means the root disk
+    # only - uncomment to add a separate data disk.
     ebs_volumes = [
-      {
-        device_name = "xvdf"
-        size        = 100
-        type        = "gp3"
-      }
+      # {
+      #   device_name = "xvdf"
+      #   size        = 100
+      #   type        = "gp3"
+      # }
     ]
 
     tags = {
