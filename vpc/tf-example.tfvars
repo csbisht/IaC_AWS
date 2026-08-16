@@ -124,14 +124,19 @@ nat_gateway_mode        = "single"
 ########################################
 # VPC endpoints
 #
+# Both endpoint blocks are maps keyed by the service short name, with the same
+# enable switch the subnet groups use: enable = false skips the endpoint and
+# leaves the line here as a reminder of what is available, and the other
+# entries are unaffected because the key is what terraform tracks.
+#
 # Gateway endpoints are free and are attached to the private route tables, so
 # S3 traffic from the private tiers stops paying NAT data charges. Leave "s3"
-# on; add "dynamodb" if anything here uses it.
+# on; enable "dynamodb" if anything here uses it.
 #
-# Interface endpoints are ENIs, billed per hour and per GB. They are how a
-# private subnet reaches an AWS API without a NAT gateway. The three ssm ones
-# are what Session Manager needs - that is the access path the ec2
-# configuration in this repository is set up for.
+# Interface endpoints are ENIs, billed per hour and per GB - which is why they
+# are all off below. They are how a private subnet reaches an AWS API without a
+# NAT gateway. The three ssm ones are what Session Manager needs - that is the
+# access path the ec2 configuration in this repository is set up for.
 #
 # The ENIs go into one subnet per AZ of interface_endpoint_subnet_group. Empty
 # means the first private group in alphabetical order, which with the groups
@@ -140,15 +145,19 @@ nat_gateway_mode        = "single"
 # sources below, without which the endpoint resolves and then times out.
 ########################################
 
-gateway_endpoints = ["s3"]
+gateway_endpoints = {
+  "s3"       = { enable = true }
+  "dynamodb" = { enable = false }
+}
 
-interface_endpoints = [
-  # "ssm",
-  # "ssmmessages",
-  # "ec2messages",
-  # "secretsmanager",
-]
+interface_endpoints = {
+  "ssm"            = { enable = false }
+  "ssmmessages"    = { enable = false }
+  "ec2messages"    = { enable = false }
+  "secretsmanager" = { enable = false }
+}
 
+# Read only when at least one interface endpoint above is enabled.
 interface_endpoint_subnet_group = ""
 interface_endpoint_private_dns  = true
 

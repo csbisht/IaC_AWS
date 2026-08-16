@@ -231,16 +231,33 @@ nat_gateway_mode        = "single"
 
 ### 5. VPC Endpoints (private routes to AWS services)
 
+Both blocks are keyed by the service name and carry the same `enable` switch the subnet groups use, so an endpoint you do not want yet can stay in the file, switched off, instead of being deleted:
+
 ```hcl
-gateway_endpoints   = ["s3"]   # Free. Keeps S3 traffic off the NAT gateway.
-interface_endpoints = []       # Billed per hour + per GB. See below.
+gateway_endpoints = {
+  "s3"       = { enable = true }   # Free. Keeps S3 traffic off the NAT gateway.
+  "dynamodb" = { enable = false }
+}
+
+interface_endpoints = {
+  "ssm"            = { enable = false }  # Billed per hour + per GB. See below.
+  "ssmmessages"    = { enable = false }
+  "ec2messages"    = { enable = false }
+  "secretsmanager" = { enable = false }
+}
 ```
+
+`enable` defaults to `true`, so `{ "s3" = {} }` creates the S3 endpoint. Switching one off leaves the others alone — the key is what Terraform tracks.
 
 - **Gateway endpoints** (`s3`, `dynamodb`) are free and are wired into the private route tables. Leave `s3` on.
 - **Interface endpoints** put a network card in your subnets so a private machine can reach an AWS API **without any NAT gateway**. The common set:
 
 ```hcl
-interface_endpoints = ["ssm", "ssmmessages", "ec2messages"]  # Session Manager
+interface_endpoints = {
+  "ssm"         = { enable = true }  # Session Manager
+  "ssmmessages" = { enable = true }
+  "ec2messages" = { enable = true }
+}
 ```
   With those three, an EC2 instance from the [`ec2/`](file:///c:/Users/csbis/Documents/MyDocs/Codes/IaC_AWS/ec2/README.md) folder can be logged into with Session Manager even with `nat_gateway_mode = "none"`.
 
@@ -356,9 +373,17 @@ This configuration writes `kubernetes.io/role/elb` and `kubernetes.io/role/inter
 ### Recipe A: The cheapest possible development network
 No NAT gateway at all — private subnets reach AWS APIs through endpoints and nothing else:
 ```hcl
-nat_gateway_mode    = "none"
-gateway_endpoints   = ["s3"]
-interface_endpoints = ["ssm", "ssmmessages", "ec2messages"]
+nat_gateway_mode = "none"
+
+gateway_endpoints = {
+  "s3" = { enable = true }
+}
+
+interface_endpoints = {
+  "ssm"         = { enable = true }
+  "ssmmessages" = { enable = true }
+  "ec2messages" = { enable = true }
+}
 ```
 
 ### Recipe B: Production, no single point of failure

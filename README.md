@@ -181,8 +181,12 @@ The [`vpc`](file:///c:/Users/csbis/Documents/MyDocs/Codes/IaC_AWS/vpc) module bu
      }
    }
 
-   nat_gateway_mode  = "single"          # "none" | "single" | "one_per_az"
-   gateway_endpoints = ["s3"]            # Free, and saves NAT data charges
+   nat_gateway_mode = "single"           # "none" | "single" | "one_per_az"
+
+   gateway_endpoints = {                 # Free, and saves NAT data charges
+     "s3"       = { enable = true }      # enable = false keeps the line as a note
+     "dynamodb" = { enable = false }
+   }
    ```
 
 4. Build the network:

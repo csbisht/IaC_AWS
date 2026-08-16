@@ -217,37 +217,50 @@ variable "nat_gateway_mode" {
 ########################################
 
 variable "gateway_endpoints" {
-  type        = list(string)
+  type = map(object({
+    enable = optional(bool, true)
+  }))
   description = <<-EOT
-    Gateway endpoint services to create, by short name - "s3", "dynamodb".
-    Gateway endpoints are free and are wired into the private route tables of
-    this VPC, so traffic to those services leaves through the endpoint instead
-    of the NAT gateway. Worth switching on even when nothing needs it yet.
+    Gateway endpoint services to create, keyed by short name - "s3",
+    "dynamodb". Gateway endpoints are free and are wired into the private route
+    tables of this VPC, so traffic to those services leaves through the endpoint
+    instead of the NAT gateway. Worth switching on even when nothing needs it
+    yet.
+
+      enable - false skips that service, leaving the entry in the file as
+               documentation. Defaults to true.
 
     Public route tables are deliberately left alone: a public subnet already
     reaches those services over the internet gateway at no data charge.
   EOT
-  default     = []
+  default     = {}
 
   validation {
-    condition     = alltrue([for s in var.gateway_endpoints : contains(["s3", "dynamodb"], s)])
+    condition     = alltrue([for s in keys(var.gateway_endpoints) : contains(["s3", "dynamodb"], s)])
     error_message = "AWS only offers gateway endpoints for \"s3\" and \"dynamodb\". Everything else is an interface endpoint."
   }
 }
 
 variable "interface_endpoints" {
-  type        = list(string)
+  type = map(object({
+    enable = optional(bool, true)
+  }))
   description = <<-EOT
-    Interface endpoint services to create, by short name - "secretsmanager",
-    "ssm", "ssmmessages", "ec2messages", "ecr.api", "ecr.dkr", "sts", "logs".
+    Interface endpoint services to create, keyed by short name -
+    "secretsmanager", "ssm", "ssmmessages", "ec2messages", "ecr.api",
+    "ecr.dkr", "sts", "logs".
 
-    Each one puts an ENI in one subnet per AZ of interface_endpoint_subnet_group
-    and is billed hourly per ENI plus per GB. They exist so private subnets can
-    reach an AWS API without a NAT gateway; ssm + ssmmessages + ec2messages is
-    the set that makes Session Manager work on an instance with no egress, which
-    is what the ec2 configuration in this repository expects.
+      enable - false skips that service, leaving the entry in the file as
+               documentation. Defaults to true.
+
+    Each enabled one puts an ENI in one subnet per AZ of
+    interface_endpoint_subnet_group and is billed hourly per ENI plus per GB.
+    They exist so private subnets can reach an AWS API without a NAT gateway;
+    ssm + ssmmessages + ec2messages is the set that makes Session Manager work
+    on an instance with no egress, which is what the ec2 configuration in this
+    repository expects.
   EOT
-  default     = []
+  default     = {}
 }
 
 variable "interface_endpoint_subnet_group" {
@@ -270,7 +283,7 @@ variable "vpc_endpoint_ingress_cidrs" {
     so the usual "everything in this VPC" does not have to be typed twice;
     anything else is taken literally.
 
-    Only read when interface_endpoints is non-empty.
+    Only read when at least one interface endpoint is enabled.
   EOT
   default     = ["@vpc_cidr"]
 

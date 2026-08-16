@@ -11,7 +11,7 @@
 ########################################
 
 resource "aws_security_group" "vpc_endpoints" {
-  count = length(var.interface_endpoints) > 0 ? 1 : 0
+  count = length(local.interface_endpoint_services) > 0 ? 1 : 0
 
   name_prefix = "${var.name_prefix}-vpc-endpoints-"
   description = "HTTPS to the interface VPC endpoints of ${local.vpc_name}"

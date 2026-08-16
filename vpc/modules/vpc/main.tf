@@ -95,6 +95,14 @@ locals {
   # VPC endpoints
   ########################################
 
+  # Both endpoint variables are maps keyed by service short name, so an entry
+  # can be switched off with enable = false and still stay in the file as
+  # documentation - the same way a subnet group does. Only the enabled keys ever
+  # reach a resource, and the key is the for_each identity, so disabling one
+  # service leaves the others untouched.
+  gateway_endpoint_services   = sort([for s, e in var.gateway_endpoints : s if e.enable])
+  interface_endpoint_services = sort([for s, e in var.interface_endpoints : s if e.enable])
+
   private_group_keys = sort([for gk, g in local.enabled_groups : gk if g.tier == "private"])
 
   interface_endpoint_group = (

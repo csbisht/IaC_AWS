@@ -27,23 +27,23 @@ resource "aws_vpc" "this" {
     }
 
     precondition {
-      condition     = length(var.interface_endpoints) == 0 || local.interface_endpoint_group != ""
-      error_message = "interface_endpoints are configured but there is no subnet group to place their ENIs in. Add a group with tier = \"private\", or name one in interface_endpoint_subnet_group."
+      condition     = length(local.interface_endpoint_services) == 0 || local.interface_endpoint_group != ""
+      error_message = "interface_endpoints are enabled but there is no subnet group to place their ENIs in. Add a group with tier = \"private\", or name one in interface_endpoint_subnet_group."
     }
 
     precondition {
-      condition     = length(var.interface_endpoints) == 0 || length(local.interface_endpoint_subnet_keys) > 0
+      condition     = length(local.interface_endpoint_services) == 0 || length(local.interface_endpoint_subnet_keys) > 0
       error_message = "interface_endpoint_subnet_group = \"${local.interface_endpoint_group}\" is not an enabled subnet group with at least one CIDR, so the interface endpoints have nowhere to go."
     }
 
     precondition {
-      condition     = length(var.interface_endpoints) == 0 || !var.interface_endpoint_private_dns || (var.enable_dns_support && var.enable_dns_hostnames)
+      condition     = length(local.interface_endpoint_services) == 0 || !var.interface_endpoint_private_dns || (var.enable_dns_support && var.enable_dns_hostnames)
       error_message = "interface_endpoint_private_dns = true needs both enable_dns_support and enable_dns_hostnames on the VPC."
     }
 
     precondition {
-      condition     = length(var.gateway_endpoints) == 0 || length(local.private_azs) > 0
-      error_message = "gateway_endpoints are wired into the private route tables, but no enabled subnet group has tier = \"private\"."
+      condition     = length(local.gateway_endpoint_services) == 0 || length(local.private_azs) > 0
+      error_message = "gateway_endpoints are enabled and are wired into the private route tables, but no enabled subnet group has tier = \"private\"."
     }
   }
 }
